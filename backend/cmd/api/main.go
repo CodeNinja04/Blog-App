@@ -4,6 +4,7 @@ import (
 	"backend/backend/models"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -227,6 +228,37 @@ func deleteBlog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(deleteResult)
+
+}
+
+// search user with email id
+func getBlogUser(w http.ResponseWriter, r *http.Request) {
+	// Set header
+	w.Header().Set("Content-Type", "application/json")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	// get params
+	var params = mux.Vars(r)
+	fmt.Println(params["email"])
+	// string to primitve.ObjectID
+	//ID, err := primitive.ObjectIDFromHex(params["id"])
+
+	// prepare filter.
+	filter := bson.M{"title": params["email"]}
+
+	Result, err := collection2.Find(context.TODO(), filter)
+
+	if err != nil {
+		helper.GetError(err, w)
+		return
+	}
+
+	var arr []bson.M
+	if err = Result.All(ctx, &arr); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(arr)
+
+	json.NewEncoder(w).Encode(arr)
 }
 
 // var client *mongo.Client
@@ -242,6 +274,7 @@ func main() {
 	r.HandleFunc("/api/Blogs/{id}", deleteBlog).Methods("DELETE")
 	r.HandleFunc("/api/user/signup", userSignup).Methods("POST")
 	r.HandleFunc("/api/user/login", userLogin).Methods("POST")
+	r.HandleFunc("/api/users/Blogs/{email}", getBlogUser).Methods("GET")
 
 	//config := helper.GetConfiguration()
 	log.Fatal(http.ListenAndServe(":8000", r))
